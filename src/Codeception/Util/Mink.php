@@ -250,25 +250,17 @@ abstract class Mink extends \Codeception\Module implements RemoteInterface, WebI
 
     public function seeElement($selector)
     {
-        try{
-            $this->findEl($selector);
-        } catch (ElementNotFound $e) {
-            $this->fail("Element '$selector' was not found");
-            return;
-        }
-        $this->assertTrue(true);
+		$el = $this->findEl($selector);
+
+		if (!$el) \PHPUnit_Framework_Assert::fail("Element $selector not found");
+		\PHPUnit_Framework_Assert::assertTrue($this->session->getDriver()->isVisible($el->getXpath()));
     }
 
     public function dontSeeElement($selector)
     {
-        try{
-            $this->findEl($selector);
-        } catch (ElementNotFound $e) {
-            $this->assertTrue(true);
-            return;
-        }
-        $this->fail("Element '$selector' was not found");
-    }
+		$el = $this->findEl($selector);
+		\PHPUnit_Framework_Assert::assertFalse($this->session->getDriver()->isVisible($el->getXpath()));
+	}
 
     /**
      * @param $selector
@@ -285,7 +277,6 @@ abstract class Mink extends \Codeception\Module implements RemoteInterface, WebI
         if (!$el and Locator::isXPath($selector)) {
             $el = @$page->find('xpath',$selector);
         }
-
         if (!$el) throw new ElementNotFound($selector, 'CSS or XPath');
         return $el;
     }
@@ -537,6 +528,22 @@ abstract class Mink extends \Codeception\Module implements RemoteInterface, WebI
         }
 
         throw new ElementNotFound($cssOrXPathOrRegex, 'CSS or XPath or Regex');
+    }
+
+    public function grabAttributeFrom($cssOrXPathOrRegex, $attribute) {
+        $el = null;
+
+        if (Locator::isCSS($cssOrXPathOrRegex)) {
+            $el = $this->session->getPage()->find('css', $cssOrXPathOrRegex);
+            if ($el) return $el->getAttribute($attribute);
+        }
+
+        if (!$el and Locator::isXPath($cssOrXPathOrRegex)) {
+            $el = @$this->session->getPage()->find('xpath', $cssOrXPathOrRegex);
+            if ($el) return $el->getAttribute($attribute);
+        }
+
+        throw new ElementNotFound($cssOrXPathOrRegex, 'CSS or XPath');
     }
 
 
